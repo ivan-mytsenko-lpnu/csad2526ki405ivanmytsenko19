@@ -1,0 +1,12 @@
+write Hello World program to main.cpp
+
+Updated file:
+
+// ...existing code...
+#include <iostream>
+
+int main() {
+    std::cout << "Hello World" << std::endl;
+    return 0;
+}
+// ...existing code...
