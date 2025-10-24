@@ -398,3 +398,476 @@ fi
 
 echo "CI script completed successfully on ${OS}"
 ````
+
+ivan-mytsenko-lpnu: i have ci.yml file, need to create next steps using github actions:
+1. trigger: launch action when there push or pull request in branch develop or main
+2. create one job, for example cross_build
+3. Use matrix strategy(strategy:matrix) to run build on each os: linux(ubuntu), windows, macOs
+4. Every build should contain next steps: code checkout(actions/checkout@v4), install cmake(if necessary), run config and bulid commands, deploy
+
+GitHub Copilot: ````yaml
+name: CI
+
+on:
+  push:
+    branches: [ develop, main ]
+  pull_request:
+    branches: [ develop, main ]
+
+jobs:
+  cross_build:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install CMake on Linux / macOS
+        if: runner.os != 'Windows'
+        run: |
+          if [ "${{ matrix.os }}" = "ubuntu-latest" ]; then
+            sudo apt-get update
+            sudo apt-get install -y build-essential cmake
+          else
+            # macOS
+            brew update
+            brew install cmake
+          fi
+        shell: bash
+
+      - name: Install CMake on Windows
+        if: runner.os == 'Windows'
+        run: |
+          choco install -y cmake --installargs 'ADD_CMAKE_TO_PATH=System'
+        shell: pwsh
+
+      - name: Configure (CMake)
+        if: runner.os != 'Windows'
+        run: |
+          mkdir -p build
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+        shell: bash
+
+      - name: Configure (CMake) - Windows
+        if: runner.os == 'Windows'
+        run: |
+          mkdir build
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+        shell: pwsh
+
+      - name: Build (Linux / macOS)
+        if: runner.os != 'Windows'
+        run: |
+          cd build
+          cmake --build . -- -j$(nproc || sysctl -n hw.ncpu || echo 2)
+        shell: bash
+
+      - name: Build (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          cd build
+          cmake --build . --config Release -- /m
+        shell: pwsh
+
+      - name: Run tests (Linux / macOS)
+        if: runner.os != 'Windows'
+        run: |
+          cd build
+          ctest --output-on-failure
+        shell: bash
+
+      - name: Run tests (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          cd build
+          ctest --output-on-failure -C Release
+        shell: pwsh
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: hello-world-${{ matrix.os }}
+          path: build/**
+
+      - name: Deploy placeholder
+        run: echo "Deploy step placeholder - add your deployment commands here"
+```// filepath: .github/workflows/ci.yml
+name: CI
+
+on:
+  push:
+    branches: [ develop, main ]
+  pull_request:
+    branches: [ develop, main ]
+
+jobs:
+  cross_build:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install CMake on Linux / macOS
+        if: runner.os != 'Windows'
+        run: |
+          if [ "${{ matrix.os }}" = "ubuntu-latest" ]; then
+            sudo apt-get update
+            sudo apt-get install -y build-essential cmake
+          else
+            # macOS
+            brew update
+            brew install cmake
+          fi
+        shell: bash
+
+      - name: Install CMake on Windows
+        if: runner.os == 'Windows'
+        run: |
+          choco install -y cmake --installargs 'ADD_CMAKE_TO_PATH=System'
+        shell: pwsh
+
+      - name: Configure (CMake)
+        if: runner.os != 'Windows'
+        run: |
+          mkdir -p build
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+        shell: bash
+
+      - name: Configure (CMake) - Windows
+        if: runner.os == 'Windows'
+        run: |
+          mkdir build
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+        shell: pwsh
+
+      - name: Build (Linux / macOS)
+        if: runner.os != 'Windows'
+        run: |
+          cd build
+          cmake --build . -- -j$(nproc || sysctl -n hw.ncpu || echo 2)
+        shell: bash
+
+      - name: Build (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          cd build
+          cmake --build . --config Release -- /m
+        shell: pwsh
+
+      - name: Run tests (Linux / macOS)
+        if: runner.os != 'Windows'
+        run: |
+          cd build
+          ctest --output-on-failure
+        shell: bash
+
+      - name: Run tests (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          cd build
+          ctest --output-on-failure -C Release
+        shell: pwsh
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: hello-world-${{ matrix.os }}
+          path: build/**
+
+      - name: Deploy placeholder
+        run: echo "Deploy step placeholder - add your deployment commands here"
+
+
+ivan-mytsenko-lpnu: also taike into accoun that i already have ci.sh script that builds and tests, but if it is Windsows try to run ci.bat
+
+GitHub Copilot: ````yaml
+name: CI
+
+on:
+  push:
+    branches: [ develop, main ]
+  pull_request:
+    branches: [ develop, main ]
+
+jobs:
+  cross_build:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install CMake on Linux
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake
+        shell: bash
+
+      - name: Install CMake on macOS
+        if: runner.os == 'macOS'
+        run: |
+          brew update
+          brew install cmake
+        shell: bash
+
+      - name: Install CMake on Windows
+        if: runner.os == 'Windows'
+        run: |
+          choco install -y cmake --installargs 'ADD_CMAKE_TO_PATH=System'
+        shell: pwsh
+
+      - name: Make ci.sh executable (Linux / macOS)
+        if: runner.os != 'Windows'
+        run: |
+          chmod +x ./ci.sh || true
+        shell: bash
+
+      - name: Run CI script on Linux / macOS
+        if: runner.os != 'Windows'
+        run: |
+          ./ci.sh
+        shell: bash
+
+      - name: Run CI script on Windows
+        if: runner.os == 'Windows'
+        run: |
+          echo Running ci.bat
+          ci.bat
+        shell: cmd
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: hello-world-${{ matrix.os }}
+          path: build/**
+
+      - name: Deploy placeholder
+        run: echo "Deploy step placeholder - add your deployment commands here"
+```// filepath: .github/workflows/ci.yml
+name: CI
+
+on:
+  push:
+    branches: [ develop, main ]
+  pull_request:
+    branches: [ develop, main ]
+
+jobs:
+  cross_build:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install CMake on Linux
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake
+        shell: bash
+
+      - name: Install CMake on macOS
+        if: runner.os == 'macOS'
+        run: |
+          brew update
+          brew install cmake
+        shell: bash
+
+      - name: Install CMake on Windows
+        if: runner.os == 'Windows'
+        run: |
+          choco install -y cmake --installargs 'ADD_CMAKE_TO_PATH=System'
+        shell: pwsh
+
+      - name: Make ci.sh executable (Linux / macOS)
+        if: runner.os != 'Windows'
+        run: |
+          chmod +x ./ci.sh || true
+        shell: bash
+
+      - name: Run CI script on Linux / macOS
+        if: runner.os != 'Windows'
+        run: |
+          ./ci.sh
+        shell: bash
+
+      - name: Run CI script on Windows
+        if: runner.os == 'Windows'
+        run: |
+          echo Running ci.bat
+          ci.bat
+        shell: cmd
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: hello-world-${{ matrix.os }}
+          path: build/**
+
+      - name: Deploy placeholder
+        run: echo "Deploy step placeholder - add your deployment commands here"
+
+
+ivan-mytsenko-lpnu: name: CI
+
+on:
+  push:
+    branches:
+      - '*develop*'
+      - '*master*'
+  pull_request:
+    branches:
+      - '*develop*'
+      - '*master*'
+
+jobs:
+  cross_build:
+    name: Cross-platform build
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup CMake
+        uses: jwlawson/actions-setup-cmake@v2
+        with:
+          # Adjust version as needed. This action will install CMake on each runner.
+          cmake-version: '3.27.5'
+
+      - name: Run Windows CI
+        if: runner.os == 'Windows'
+        shell: cmd
+        run: ./ci.bat
+
+      - name: Run Linux/macOS CI
+        if: runner.os != 'Windows'
+        run: |
+          chmod +x ci.sh
+          ./ci.sh
+
+      - name: Deploy
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts-${{ matrix.os }}
+          path: build/
+
+          here is example how it should be, but i have main instead of master branch
+
+GitHub Copilot: ````yaml
+name: CI
+
+on:
+  push:
+    branches:
+      - '*develop*'
+      - '*main*'
+  pull_request:
+    branches:
+      - '*develop*'
+      - '*main*'
+
+jobs:
+  cross_build:
+    name: Cross-platform build
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup CMake
+        uses: jwlawson/actions-setup-cmake@v2
+        with:
+          cmake-version: '3.27.5'
+
+      - name: Run Windows CI
+        if: runner.os == 'Windows'
+        shell: cmd
+        run: ci.bat
+
+      - name: Run Linux/macOS CI
+        if: runner.os != 'Windows'
+        run: |
+          chmod +x ci.sh
+          ./ci.sh
+
+      - name: Deploy
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts-${{ matrix.os }}
+          path: build/
+```// filepath: .github/workflows/ci.yml
+name: CI
+
+on:
+  push:
+    branches:
+      - '*develop*'
+      - '*main*'
+  pull_request:
+    branches:
+      - '*develop*'
+      - '*main*'
+
+jobs:
+  cross_build:
+    name: Cross-platform build
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup CMake
+        uses: jwlawson/actions-setup-cmake@v2
+        with:
+          cmake-version: '3.27.5'
+
+      - name: Run Windows CI
+        if: runner.os == 'Windows'
+        shell: cmd
+        run: ci.bat
+
+      - name: Run Linux/macOS CI
+        if: runner.os != 'Windows'
+        run: |
+          chmod +x ci.sh
+          ./ci.sh
+
+      - name: Deploy
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts-${{ matrix.os }}
+          path: build/
