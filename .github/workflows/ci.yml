@@ -1,0 +1,93 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - '*develop*'
+      - '*main*'
+  pull_request:
+    branches:
+      - '*develop*'
+      - '*main*'
+
+jobs:
+  cross_build:
+    name: Cross-platform build
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup CMake
+        uses: jwlawson/actions-setup-cmake@v2
+        with:
+          cmake-version: '3.27.5'
+
+      - name: Run Windows CI
+        if: runner.os == 'Windows'
+        shell: cmd
+        run: ci.bat
+
+      - name: Run Linux/macOS CI
+        if: runner.os != 'Windows'
+        run: |
+          chmod +x ci.sh
+          ./ci.sh
+
+      - name: Deploy
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts-${{ matrix.os }}
+          path: build/
+```// filepath: .github/workflows/ci.yml
+name: CI
+
+on:
+  push:
+    branches:
+      - '*develop*'
+      - '*main*'
+  pull_request:
+    branches:
+      - '*develop*'
+      - '*main*'
+
+jobs:
+  cross_build:
+    name: Cross-platform build
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup CMake
+        uses: jwlawson/actions-setup-cmake@v2
+        with:
+          cmake-version: '3.27.5'
+
+      - name: Run Windows CI
+        if: runner.os == 'Windows'
+        shell: cmd
+        run: ci.bat
+
+      - name: Run Linux/macOS CI
+        if: runner.os != 'Windows'
+        run: |
+          chmod +x ci.sh
+          ./ci.sh
+
+      - name: Deploy
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts-${{ matrix.os }}
+          path: build/
